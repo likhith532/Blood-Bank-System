@@ -1,86 +1,224 @@
-// Enhanced Dashboard Components with Chart.js Integration
-class DashboardComponents {
+// ============================================
+// PREMIUM BLOOD BANK DASHBOARD COMPONENTS
+// ============================================
+
+class BloodBankDashboardComponents {
     constructor() {
         this.charts = {};
-        this.loadChartJS();
+        this.updateIntervals = {};
+        this.isInitialized = false;
+        this.chartColors = {
+            primary: '#dc2626',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+            purple: '#8b5cf6',
+            pink: '#ec4899',
+            cyan: '#06b6d4',
+            gradient: {
+                red: ['#dc2626', '#991b1b'],
+                green: ['#10b981', '#059669'],
+                blue: ['#3b82f6', '#1e40af'],
+                orange: ['#f59e0b', '#d97706']
+            }
+        };
+        
+        this.init();
     }
 
-    // Load Chart.js library
-    loadChartJS() {
-        if (!window.Chart) {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-            script.onload = () => {
-                console.log('Chart.js loaded successfully');
-            };
-            document.head.appendChild(script);
+    // ========== INITIALIZATION ==========
+    async init() {
+        console.log('%c📊 Dashboard Components Initializing...', 'color: #3b82f6; font-weight: bold;');
+        
+        try {
+            await this.loadChartJS();
+            this.isInitialized = true;
+            console.log('%c✅ Dashboard Components Ready!', 'color: #10b981; font-weight: bold;');
+        } catch (error) {
+            console.error('❌ Failed to initialize dashboard components:', error);
         }
     }
 
-    // Enhanced Donor Dashboard Components
-    getDonorOverview() {
+    async loadChartJS() {
+        if (window.Chart) {
+            console.log('✅ Chart.js already loaded');
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+            script.onload = () => {
+                console.log('✅ Chart.js loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                console.error('❌ Failed to load Chart.js');
+                reject(new Error('Failed to load Chart.js'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    // ========== DONOR DASHBOARD ==========
+    getDonorDashboard(userData) {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-chart-line"></i> Donation Overview</h3>
-                <div class="dashboard-stats">
-                    <div class="stat-card primary">
-                        <div class="stat-icon">🩸</div>
-                        <div class="stat-content">
-                            <h4>Total Donations</h4>
-                            <p class="stat-number" id="donor-total-donations">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon">📅</div>
-                        <div class="stat-content">
-                            <h4>Last Donation</h4>
-                            <p class="stat-number" id="donor-last-donation">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon">⏰</div>
-                        <div class="stat-content">
-                            <h4>Next Eligible</h4>
-                            <p class="stat-number" id="donor-next-eligible">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="stat-icon">🅰️</div>
-                        <div class="stat-content">
-                            <h4>Blood Type</h4>
-                            <p class="stat-number" id="donor-blood-type">Loading...</p>
-                        </div>
+            <div class="dashboard-wrapper">
+                <!-- Welcome Banner -->
+                ${this.createWelcomeBanner(userData, 'donor')}
+                
+                <!-- Overview Section -->
+                ${this.getDonorOverview(userData)}
+                
+                <!-- Impact Section -->
+                ${this.getDonorImpact(userData)}
+                
+                <!-- Quick Actions -->
+                ${this.getDonorActions()}
+                
+                <!-- Recent Activity -->
+                ${this.getRecentActivity(userData.recentDonations)}
+                
+                <!-- Upcoming Appointments -->
+                ${this.getUpcomingAppointments(userData.appointments)}
+            </div>
+        `;
+    }
+
+    createWelcomeBanner(userData, role) {
+        const greetings = this.getGreeting();
+        const roleIcon = {
+            donor: '🩸',
+            recipient: '🏥',
+            admin: '⚡'
+        };
+
+        return `
+            <div class="welcome-banner glass-card">
+                <div class="welcome-content">
+                    <h1>${greetings}, ${userData.name || 'User'}! ${roleIcon[role]}</h1>
+                    <p class="welcome-subtitle">
+                        ${role === 'donor' ? 'Thank you for being a life-saver!' : 
+                          role === 'recipient' ? 'We\'re here to help you' : 
+                          'System Dashboard Overview'}
+                    </p>
+                </div>
+                <div class="welcome-stats-mini">
+                    <div class="mini-stat">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Last login: ${this.formatRelativeTime(userData.lastLogin)}</span>
                     </div>
                 </div>
             </div>
+        `;
+    }
 
-            <div class="dashboard-section">
-                <h3><i class="fas fa-heart"></i> Your Impact</h3>
-                <div class="impact-container">
+    getDonorOverview(userData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Donation Overview</h2>
+                    <button class="btn-icon" onclick="dashboardComponents.refreshDonorStats()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <div class="stats-grid">
+                    ${this.createStatCard({
+                        icon: '🩸',
+                        title: 'Total Donations',
+                        value: userData.totalDonations || 0,
+                        trend: '+2 this month',
+                        color: 'primary',
+                        gradient: true
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '📅',
+                        title: 'Last Donation',
+                        value: this.formatDate(userData.lastDonation),
+                        subtitle: this.formatRelativeTime(userData.lastDonation),
+                        color: 'success'
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '⏰',
+                        title: 'Next Eligible',
+                        value: this.formatDate(userData.nextEligible),
+                        subtitle: this.calculateDaysUntil(userData.nextEligible) + ' days',
+                        color: 'warning'
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: userData.bloodType || 'O+',
+                        title: 'Blood Type',
+                        value: userData.bloodType || 'Not Set',
+                        subtitle: this.getRarity(userData.bloodType),
+                        color: 'info'
+                    })}
+                </div>
+            </div>
+        `;
+    }
+
+    getDonorImpact(userData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-heart"></i> Your Impact</h2>
+                    <span class="badge badge-success">Making a Difference</span>
+                </div>
+                
+                <div class="impact-container glass-card">
                     <div class="impact-visual">
-                        <canvas id="donorImpactChart" width="300" height="200"></canvas>
+                        <canvas id="donorImpactChart" width="300" height="250"></canvas>
                     </div>
-                    <div class="impact-stats">
-                        <div class="impact-item">
-                            <span class="impact-number" id="lives-potentially-saved">0</span>
-                            <span class="impact-label">Lives Potentially Saved</span>
+                    
+                    <div class="impact-stats-grid">
+                        <div class="impact-stat">
+                            <div class="impact-icon">💖</div>
+                            <div class="impact-content">
+                                <span class="impact-number" data-target="${(userData.totalDonations || 0) * 3}">0</span>
+                                <span class="impact-label">Lives Potentially Saved</span>
+                            </div>
                         </div>
-                        <div class="impact-item">
-                            <span class="impact-number" id="total-blood-volume">0 ml</span>
-                            <span class="impact-label">Total Blood Donated</span>
+                        
+                        <div class="impact-stat">
+                            <div class="impact-icon">💉</div>
+                            <div class="impact-content">
+                                <span class="impact-number" data-target="${(userData.totalDonations || 0) * 450}">0</span>
+                                <span class="impact-unit">ml</span>
+                                <span class="impact-label">Total Blood Donated</span>
+                            </div>
                         </div>
-                        <div class="impact-item">
-                            <span class="impact-number" id="donation-streak">0</span>
-                            <span class="impact-label">Donation Streak</span>
+                        
+                        <div class="impact-stat">
+                            <div class="impact-icon">🔥</div>
+                            <div class="impact-content">
+                                <span class="impact-number" data-target="${userData.donationStreak || 0}">0</span>
+                                <span class="impact-label">Donation Streak</span>
+                            </div>
+                        </div>
+                        
+                        <div class="impact-stat">
+                            <div class="impact-icon">🏆</div>
+                            <div class="impact-content">
+                                <span class="impact-number">${this.getBadgeLevel(userData.totalDonations)}</span>
+                                <span class="impact-label">Donor Level</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="dashboard-section">
-                <h3><i class="fas fa-clock"></i> Recent Activity</h3>
-                <div id="donor-recent-activity" class="activity-timeline">
-                    <div class="loading-spinner">Loading recent activity...</div>
+                    
+                    <div class="achievement-progress">
+                        <div class="progress-header">
+                            <span>Next Achievement: ${this.getNextAchievement(userData.totalDonations)}</span>
+                            <span>${userData.totalDonations} / ${this.getNextMilestone(userData.totalDonations)}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${this.calculateAchievementProgress(userData.totalDonations)}%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -88,81 +226,124 @@ class DashboardComponents {
 
     getDonorActions() {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-plus"></i> Quick Actions</h3>
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                </div>
+                
                 <div class="action-grid">
-                    <button class="action-card" onclick="DashboardComponents.scheduleNewDonation()">
-                        <div class="action-icon">🗓️</div>
-                        <h4>Schedule Donation</h4>
-                        <p>Book your next donation appointment</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.checkEligibility()">
-                        <div class="action-icon">✅</div>
-                        <h4>Check Eligibility</h4>
-                        <p>Verify if you can donate today</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.viewCertificates()">
-                        <div class="action-icon">🏆</div>
-                        <h4>View Certificates</h4>
-                        <p>Download donation certificates</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.findBloodDrives()">
-                        <div class="action-icon">📍</div>
-                        <h4>Find Blood Drives</h4>
-                        <p>Locate nearby donation events</p>
-                    </button>
+                    ${this.createActionCard({
+                        icon: '🗓️',
+                        title: 'Schedule Donation',
+                        description: 'Book your next donation appointment',
+                        action: 'scheduleNewDonation',
+                        color: 'primary'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '✅',
+                        title: 'Check Eligibility',
+                        description: 'Verify if you can donate today',
+                        action: 'checkEligibility',
+                        color: 'success'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '🏆',
+                        title: 'View Certificates',
+                        description: 'Download donation certificates',
+                        action: 'viewCertificates',
+                        color: 'warning'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📍',
+                        title: 'Find Blood Drives',
+                        description: 'Locate nearby donation events',
+                        action: 'findBloodDrives',
+                        color: 'info'
+                    })}
                 </div>
             </div>
         `;
     }
 
-    // Enhanced Recipient Dashboard Components
-    getRecipientOverview() {
+    // ========== RECIPIENT DASHBOARD ==========
+    getRecipientDashboard(userData) {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-chart-bar"></i> Request Overview</h3>
-                <div class="dashboard-stats">
-                    <div class="stat-card primary">
-                        <div class="stat-icon">📋</div>
-                        <div class="stat-content">
-                            <h4>Active Requests</h4>
-                            <p class="stat-number" id="recipient-active-requests">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-content">
-                            <h4>Fulfilled Requests</h4>
-                            <p class="stat-number" id="recipient-fulfilled-requests">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon">⏳</div>
-                        <div class="stat-content">
-                            <h4>Pending Approval</h4>
-                            <p class="stat-number" id="recipient-pending-requests">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="stat-icon">🅰️</div>
-                        <div class="stat-content">
-                            <h4>Blood Type</h4>
-                            <p class="stat-number" id="recipient-blood-type">Loading...</p>
-                        </div>
-                    </div>
+            <div class="dashboard-wrapper">
+                ${this.createWelcomeBanner(userData, 'recipient')}
+                ${this.getRecipientOverview(userData)}
+                ${this.getBloodAvailability(userData)}
+                ${this.getRecipientActions()}
+                ${this.getActiveRequests(userData.requests)}
+            </div>
+        `;
+    }
+
+    getRecipientOverview(userData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Request Overview</h2>
+                </div>
+                
+                <div class="stats-grid">
+                    ${this.createStatCard({
+                        icon: '📋',
+                        title: 'Active Requests',
+                        value: userData.activeRequests || 0,
+                        color: 'primary'
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '✅',
+                        title: 'Fulfilled Requests',
+                        value: userData.fulfilledRequests || 0,
+                        color: 'success'
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '⏳',
+                        title: 'Pending Approval',
+                        value: userData.pendingRequests || 0,
+                        color: 'warning'
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: userData.bloodType || 'O+',
+                        title: 'Blood Type',
+                        value: userData.bloodType || 'Not Set',
+                        color: 'info'
+                    })}
                 </div>
             </div>
+        `;
+    }
 
-            <div class="dashboard-section">
-                <h3><i class="fas fa-warehouse"></i> Blood Availability</h3>
-                <div class="availability-container">
-                    <div class="availability-chart">
-                        <canvas id="bloodAvailabilityChart" width="400" height="200"></canvas>
+    getBloodAvailability(userData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-warehouse"></i> Blood Availability</h2>
+                    <span class="badge badge-info">Real-time</span>
+                </div>
+                
+                <div class="availability-container glass-card">
+                    <div class="chart-wrapper">
+                        <canvas id="bloodAvailabilityChart" width="400" height="250"></canvas>
                     </div>
-                    <div class="compatibility-info">
-                        <h4>Compatible Blood Types</h4>
-                        <div id="compatible-blood-types" class="blood-type-grid">
-                            <div class="loading-spinner">Loading compatibility...</div>
+                    
+                    <div class="compatibility-panel">
+                        <h3>💉 Compatible Blood Types</h3>
+                        <p class="text-secondary">For blood type: <strong>${userData.bloodType || 'Not Set'}</strong></p>
+                        <div id="compatible-blood-types" class="blood-type-compatibility">
+                            ${this.getCompatibleBloodTypes(userData.bloodType)}
+                        </div>
+                        
+                        <div class="compatibility-info-box">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Blood types marked in <span class="highlight-success">green</span> are compatible for transfusion.</p>
                         </div>
                     </div>
                 </div>
@@ -172,89 +353,179 @@ class DashboardComponents {
 
     getRecipientActions() {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-plus"></i> Request Management</h3>
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus-circle"></i> Request Management</h2>
+                </div>
+                
                 <div class="action-grid">
-                    <button class="action-card urgent" onclick="DashboardComponents.createUrgentRequest()">
-                        <div class="action-icon">🚨</div>
-                        <h4>Urgent Request</h4>
-                        <p>Submit critical blood request</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.createNormalRequest()">
-                        <div class="action-icon">📝</div>
-                        <h4>New Request</h4>
-                        <p>Submit standard blood request</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.trackRequests()">
-                        <div class="action-icon">📊</div>
-                        <h4>Track Requests</h4>
-                        <p>Monitor request status</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.findNearbyBanks()">
-                        <div class="action-icon">🗺️</div>
-                        <h4>Find Blood Banks</h4>
-                        <p>Locate nearby blood banks</p>
-                    </button>
+                    ${this.createActionCard({
+                        icon: '🚨',
+                        title: 'Urgent Request',
+                        description: 'Submit critical blood request',
+                        action: 'createUrgentRequest',
+                        color: 'danger',
+                        urgent: true
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📝',
+                        title: 'New Request',
+                        description: 'Submit standard blood request',
+                        action: 'createNormalRequest',
+                        color: 'primary'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📊',
+                        title: 'Track Requests',
+                        description: 'Monitor request status',
+                        action: 'trackRequests',
+                        color: 'info'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '🗺️',
+                        title: 'Find Blood Banks',
+                        description: 'Locate nearby blood banks',
+                        action: 'findNearbyBanks',
+                        color: 'success'
+                    })}
                 </div>
             </div>
         `;
     }
 
-    // Enhanced Admin Dashboard Components
-    getAdminOverview() {
+    // ========== ADMIN DASHBOARD ==========
+    getAdminDashboard(systemData) {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-tachometer-alt"></i> System Overview</h3>
-                <div class="dashboard-stats">
-                    <div class="stat-card primary">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-content">
-                            <h4>Total Users</h4>
-                            <p class="stat-number" id="admin-total-users">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon">🩸</div>
-                        <div class="stat-content">
-                            <h4>Total Donations</h4>
-                            <p class="stat-number" id="admin-total-donations">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon">📋</div>
-                        <div class="stat-content">
-                            <h4>Pending Requests</h4>
-                            <p class="stat-number" id="admin-pending-requests">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="stat-card danger">
-                        <div class="stat-icon">⚠️</div>
-                        <div class="stat-content">
-                            <h4>Low Stock Alerts</h4>
-                            <p class="stat-number" id="admin-low-stock">Loading...</p>
-                        </div>
+            <div class="dashboard-wrapper">
+                ${this.createWelcomeBanner(systemData, 'admin')}
+                ${this.getAdminOverview(systemData)}
+                ${this.getAdminAnalytics(systemData)}
+                ${this.getAdminActions()}
+                ${this.getSystemAlerts(systemData.alerts)}
+            </div>
+        `;
+    }
+
+    getAdminOverview(systemData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> System Overview</h2>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="dashboardComponents.refreshAdminStats()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn-icon" onclick="dashboardComponents.exportReport()">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                 </div>
+                
+                <div class="stats-grid stats-grid-4">
+                    ${this.createStatCard({
+                        icon: '👥',
+                        title: 'Total Users',
+                        value: systemData.totalUsers || 0,
+                        trend: '+12 this week',
+                        color: 'primary',
+                        gradient: true
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '🩸',
+                        title: 'Total Donations',
+                        value: systemData.totalDonations || 0,
+                        trend: '+45 this month',
+                        color: 'success',
+                        gradient: true
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '📋',
+                        title: 'Pending Requests',
+                        value: systemData.pendingRequests || 0,
+                        subtitle: 'Requires attention',
+                        color: 'warning',
+                        gradient: true
+                    })}
+                    
+                    ${this.createStatCard({
+                        icon: '⚠️',
+                        title: 'Low Stock Alerts',
+                        value: systemData.lowStockCount || 0,
+                        subtitle: 'Critical items',
+                        color: 'danger',
+                        gradient: true,
+                        pulse: true
+                    })}
+                </div>
             </div>
+        `;
+    }
 
-            <div class="dashboard-section">
-                <h3><i class="fas fa-chart-pie"></i> Analytics Dashboard</h3>
-                <div class="analytics-container">
-                    <div class="chart-container">
-                        <h4>Blood Type Distribution</h4>
-                        <canvas id="bloodTypeChart" width="300" height="200"></canvas>
+    getAdminAnalytics(systemData) {
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-pie"></i> Analytics Dashboard</h2>
+                    <select class="period-selector" onchange="dashboardComponents.updatePeriod(this.value)">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="365">Last year</option>
+                    </select>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-card glass-card">
+                        <div class="chart-header">
+                            <h3>Blood Type Distribution</h3>
+                            <button class="btn-icon-sm" onclick="dashboardComponents.expandChart('bloodType')">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="bloodTypeChart" width="300" height="250"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <h4>Monthly Donations Trend</h4>
-                        <canvas id="donationTrendChart" width="300" height="200"></canvas>
+                    
+                    <div class="chart-card glass-card">
+                        <div class="chart-header">
+                            <h3>Monthly Donations Trend</h3>
+                            <button class="btn-icon-sm" onclick="dashboardComponents.expandChart('donationTrend')">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="donationTrendChart" width="300" height="250"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <h4>Request Status Distribution</h4>
-                        <canvas id="requestStatusChart" width="300" height="200"></canvas>
+                    
+                    <div class="chart-card glass-card">
+                        <div class="chart-header">
+                            <h3>Request Status Distribution</h3>
+                            <button class="btn-icon-sm" onclick="dashboardComponents.expandChart('requestStatus')">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="requestStatusChart" width="300" height="250"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <h4>Inventory Levels</h4>
-                        <canvas id="inventoryChart" width="300" height="200"></canvas>
+                    
+                    <div class="chart-card glass-card">
+                        <div class="chart-header">
+                            <h3>Inventory Levels</h3>
+                            <button class="btn-icon-sm" onclick="dashboardComponents.expandChart('inventory')">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="inventoryChart" width="300" height="250"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -263,237 +534,284 @@ class DashboardComponents {
 
     getAdminActions() {
         return `
-            <div class="dashboard-section">
-                <h3><i class="fas fa-cogs"></i> Administrative Actions</h3>
-                <div class="action-grid">
-                    <button class="action-card" onclick="DashboardComponents.manageUsers()">
-                        <div class="action-icon">👥</div>
-                        <h4>Manage Users</h4>
-                        <p>View and manage user accounts</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.approveDonations()">
-                        <div class="action-icon">✅</div>
-                        <h4>Approve Donations</h4>
-                        <p>Review pending donations</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.manageRequests()">
-                        <div class="action-icon">📋</div>
-                        <h4>Manage Requests</h4>
-                        <p>Process blood requests</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.inventoryManagement()">
-                        <div class="action-icon">📦</div>
-                        <h4>Inventory Control</h4>
-                        <p>Manage blood inventory</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.generateReports()">
-                        <div class="action-icon">📊</div>
-                        <h4>Generate Reports</h4>
-                        <p>Create system reports</p>
-                    </button>
-                    <button class="action-card" onclick="DashboardComponents.systemSettings()">
-                        <div class="action-icon">⚙️</div>
-                        <h4>System Settings</h4>
-                        <p>Configure system parameters</p>
-                    </button>
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-cogs"></i> Administrative Actions</h2>
+                </div>
+                
+                <div class="action-grid action-grid-3">
+                    ${this.createActionCard({
+                        icon: '👥',
+                        title: 'Manage Users',
+                        description: 'View and manage user accounts',
+                        action: 'manageUsers',
+                        color: 'primary'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '✅',
+                        title: 'Approve Donations',
+                        description: 'Review pending donations',
+                        action: 'approveDonations',
+                        color: 'success',
+                        badge: '5 pending'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📋',
+                        title: 'Manage Requests',
+                        description: 'Process blood requests',
+                        action: 'manageRequests',
+                        color: 'info',
+                        badge: '3 urgent'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📦',
+                        title: 'Inventory Control',
+                        description: 'Manage blood inventory',
+                        action: 'inventoryManagement',
+                        color: 'warning'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '📊',
+                        title: 'Generate Reports',
+                        description: 'Create system reports',
+                        action: 'generateReports',
+                        color: 'purple'
+                    })}
+                    
+                    ${this.createActionCard({
+                        icon: '⚙️',
+                        title: 'System Settings',
+                        description: 'Configure system parameters',
+                        action: 'systemSettings',
+                        color: 'secondary'
+                    })}
                 </div>
             </div>
         `;
     }
 
-    // Chart Creation Methods
-    createDonorImpactChart(data) {
-        const ctx = document.getElementById('donorImpactChart');
-        if (!ctx || !window.Chart) return;
+    // ========== COMPONENT BUILDERS ==========
+    createStatCard(options) {
+        const {
+            icon,
+            title,
+            value,
+            subtitle,
+            trend,
+            color = 'primary',
+            gradient = false,
+            pulse = false
+        } = options;
 
-        this.charts.donorImpact = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Lives Saved', 'Potential Impact'],
-                datasets: [{
-                    data: [data.livesSaved || 0, data.potentialImpact || 0],
-                    backgroundColor: ['#e74c3c', '#f39c12'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
+        return `
+            <div class="stat-card stat-card-${color} ${gradient ? 'gradient' : ''} ${pulse ? 'pulse' : ''}">
+                <div class="stat-icon">${icon}</div>
+                <div class="stat-content">
+                    <h4 class="stat-title">${title}</h4>
+                    <p class="stat-value">${value}</p>
+                    ${subtitle ? `<p class="stat-subtitle">${subtitle}</p>` : ''}
+                    ${trend ? `<span class="stat-trend"><i class="fas fa-arrow-up"></i> ${trend}</span>` : ''}
+                </div>
+            </div>
+        `;
     }
 
-    createBloodAvailabilityChart(data) {
-        const ctx = document.getElementById('bloodAvailabilityChart');
-        if (!ctx || !window.Chart) return;
+    createActionCard(options) {
+        const {
+            icon,
+            title,
+            description,
+            action,
+            color = 'primary',
+            badge = null,
+            urgent = false
+        } = options;
 
-        this.charts.bloodAvailability = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                datasets: [{
-                    label: 'Available Units',
-                    data: data.availability || [0, 0, 0, 0, 0, 0, 0, 0],
-                    backgroundColor: '#3498db',
-                    borderColor: '#2980b9',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+        return `
+            <div class="action-card ${urgent ? 'urgent-card' : ''}" onclick="dashboardComponents.${action}()">
+                <div class="action-icon action-icon-${color}">${icon}</div>
+                <div class="action-content">
+                    <h4>${title}
+                        ${badge ? `<span class="action-badge">${badge}</span>` : ''}
+                    </h4>
+                    <p>${description}</p>
+                </div>
+                <div class="action-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </div>
+        `;
     }
 
-    createAdminCharts(data) {
-        // Blood Type Distribution Chart
-        const bloodTypeCtx = document.getElementById('bloodTypeChart');
-        if (bloodTypeCtx && window.Chart) {
-            this.charts.bloodType = new Chart(bloodTypeCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                    datasets: [{
-                        data: data.bloodTypeDistribution || [12, 8, 15, 6, 10, 4, 35, 10],
-                        backgroundColor: [
-                            '#e74c3c', '#c0392b', '#f39c12', '#e67e22',
-                            '#9b59b6', '#8e44ad', '#3498db', '#2980b9'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'right'
-                        }
-                    }
-                }
-            });
+    getRecentActivity(donations) {
+        if (!donations || donations.length === 0) {
+            return `
+                <div class="dashboard-section fade-in">
+                    <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                    <div class="no-data glass-card">
+                        <i class="fas fa-inbox"></i>
+                        <p>No recent activity</p>
+                    </div>
+                </div>
+            `;
         }
 
-        // Donation Trend Chart
-        const trendCtx = document.getElementById('donationTrendChart');
-        if (trendCtx && window.Chart) {
-            this.charts.donationTrend = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Donations',
-                        data: data.monthlyDonations || [65, 59, 80, 81, 56, 55],
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
+        const activityItems = donations.slice(0, 5).map(donation => `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="activity-content">
+                    <h4>Blood Donation - ${donation.bloodType}</h4>
+                    <p>${donation.location || 'Blood Bank Center'}</p>
+                    <span class="activity-time">${this.formatRelativeTime(donation.date)}</span>
+                </div>
+                <div class="activity-status status-${donation.status}">
+                    ${donation.status}
+                </div>
+            </div>
+        `).join('');
 
-        // Request Status Chart
-        const statusCtx = document.getElementById('requestStatusChart');
-        if (statusCtx && window.Chart) {
-            this.charts.requestStatus = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pending', 'Approved', 'Fulfilled', 'Rejected'],
-                    datasets: [{
-                        data: data.requestStatus || [15, 25, 45, 5],
-                        backgroundColor: ['#f39c12', '#3498db', '#27ae60', '#e74c3c']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-
-        // Inventory Chart
-        const inventoryCtx = document.getElementById('inventoryChart');
-        if (inventoryCtx && window.Chart) {
-            this.charts.inventory = new Chart(inventoryCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                    datasets: [{
-                        label: 'Current Stock',
-                        data: data.currentStock || [25, 15, 20, 8, 12, 5, 35, 18],
-                        backgroundColor: '#27ae60'
-                    }, {
-                        label: 'Minimum Required',
-                        data: data.minRequired || [20, 10, 15, 10, 10, 8, 30, 15],
-                        backgroundColor: '#e74c3c'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                    <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="activity-timeline glass-card">
+                    ${activityItems}
+                </div>
+            </div>
+        `;
     }
 
-    // Action Methods
-    static scheduleNewDonation() {
-        if (window.dashboardManager) {
-            window.dashboardManager.switchTab('new-donation');
+    getUpcomingAppointments(appointments) {
+        if (!appointments || appointments.length === 0) return '';
+
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
+                </div>
+                <div class="appointments-grid">
+                    ${appointments.map(apt => `
+                        <div class="appointment-card glass-card">
+                            <div class="appointment-date">
+                                <span class="day">${new Date(apt.date).getDate()}</span>
+                                <span class="month">${this.getMonthShort(apt.date)}</span>
+                            </div>
+                            <div class="appointment-details">
+                                <h4>${apt.type || 'Blood Donation'}</h4>
+                                <p><i class="fas fa-map-marker-alt"></i> ${apt.location}</p>
+                                <p><i class="fas fa-clock"></i> ${apt.time}</p>
+                            </div>
+                            <button class="btn-sm btn-outline" onclick="dashboardComponents.manageAppointment('${apt.id}')">
+                                Manage
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    getActiveRequests(requests) {
+        if (!requests || requests.length === 0) {
+            return `
+                <div class="dashboard-section fade-in">
+                    <h2><i class="fas fa-list"></i> Active Requests</h2>
+                    <div class="no-data glass-card">
+                        <i class="fas fa-inbox"></i>
+                        <p>No active requests</p>
+                        <button class="btn-primary" onclick="dashboardComponents.createNormalRequest()">
+                            Create New Request
+                        </button>
+                    </div>
+                </div>
+            `;
         }
+
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Active Requests</h2>
+                </div>
+                <div class="requests-list">
+                    ${requests.map(req => this.createRequestCard(req)).join('')}
+                </div>
+            </div>
+        `;
     }
 
-    static checkEligibility() {
-        if (window.dashboardManager) {
-            window.dashboardManager.switchTab('overview');
-        }
+    createRequestCard(request) {
+        return `
+            <div class="request-card glass-card">
+                <div class="request-header">
+                    <div class="request-info">
+                        <h4>Blood Request - ${request.bloodType}</h4>
+                        <span class="urgency urgency-${request.urgency}">${request.urgency}</span>
+                    </div>
+                    <span class="status-badge status-${request.status}">${request.status}</span>
+                </div>
+                <div class="request-details">
+                    <p><i class="fas fa-tint"></i> ${request.units} units required</p>
+                    <p><i class="fas fa-hospital"></i> ${request.hospital}</p>
+                    <p><i class="fas fa-calendar"></i> ${this.formatDate(request.requiredBy)}</p>
+                </div>
+                <div class="request-actions">
+                    <button class="btn-sm btn-outline" onclick="dashboardComponents.viewRequestDetails('${request.id}')">
+                        View Details
+                    </button>
+                    ${request.status === 'pending' ? `
+                        <button class="btn-sm btn-danger" onclick="dashboardComponents.cancelRequest('${request.id}')">
+                            Cancel
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
     }
 
-    static createUrgentRequest() {
-        if (window.dashboardManager) {
-            window.dashboardManager.switchTab('new-request');
-        }
+    getSystemAlerts(alerts) {
+        if (!alerts || alerts.length === 0) return '';
+
+        return `
+            <div class="dashboard-section fade-in">
+                <div class="section-header">
+                    <h2><i class="fas fa-bell"></i> System Alerts</h2>
+                    <button class="btn-sm btn-outline" onclick="dashboardComponents.clearAlerts()">
+                        Clear All
+                    </button>
+                </div>
+                <div class="alerts-container">
+                    ${alerts.map(alert => `
+                        <div class="alert alert-${alert.type}">
+                            <div class="alert-icon">
+                                <i class="fas fa-${this.getAlertIcon(alert.type)}"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>${alert.title}</h4>
+                                <p>${alert.message}</p>
+                                <span class="alert-time">${this.formatRelativeTime(alert.timestamp)}</span>
+                            </div>
+                            <button class="alert-close" onclick="dashboardComponents.dismissAlert('${alert.id}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
 
-    static manageUsers() {
-        if (window.dashboardManager) {
-            window.dashboardManager.switchTab('users');
-        }
-    }
-
-    // Utility method to destroy all charts
-    destroyCharts() {
-        Object.values(this.charts).forEach(chart => {
-            if (chart && typeof chart.destroy === 'function') {
-                chart.destroy();
-            }
-        });
-        this.charts = {};
-    }
-}
-
-// Export for use in other modules
-window.DashboardComponents = DashboardComponents;
+    getCompatibleBloodTypes(bloodType) {
+        const compatibility = {
+            'A+': ['A+', 'A-', 'O+', 'O-'],
+            'A-': ['A-', 'O-'],
+            'B+': ['B+', 'B-', 'O+', 'O-'],
+            'B-': ['B-', 'O-'],
+            'AB+': ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+',
