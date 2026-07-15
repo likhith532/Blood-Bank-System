@@ -182,6 +182,70 @@
             color: rgba(255, 255, 255, 0.3);
         }
 
+        /* Select Input */
+        select {
+            background: rgba(30, 30, 45, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #dc2626;
+            background-color: rgba(30, 30, 45, 0.8);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        select option { background: #14141e; color: #fff; }
+
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; }
+
+        /* Modal */
+        .modal-overlay {
+            background: rgba(5, 5, 10, 0.75);
+            backdrop-filter: blur(6px);
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-panel {
+            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Toast */
+        .toast {
+            min-width: 280px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            animation: toastIn 0.3s ease;
+        }
+
+        .toast.success { background: linear-gradient(135deg, #059669, #10b981); }
+        .toast.error { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+        .toast.info { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 10px;
@@ -226,11 +290,11 @@
                 </div>
                 
                 <!-- Action Buttons -->
-                <div class="hidden md:flex items-center space-x-4">
-                    <button class="px-6 py-2.5 rounded-xl border-2 border-red-500 text-red-500 font-semibold hover:bg-red-500 hover:text-white transition-all">
+                <div id="authArea" class="hidden md:flex items-center space-x-4">
+                    <button data-open="login" class="px-6 py-2.5 rounded-xl border-2 border-red-500 text-red-500 font-semibold hover:bg-red-500 hover:text-white transition-all">
                         Login
                     </button>
-                    <button class="px-6 py-2.5 rounded-xl gradient-btn text-white font-semibold">
+                    <button data-open="register" class="px-6 py-2.5 rounded-xl gradient-btn text-white font-semibold">
                         Register
                     </button>
                 </div>
@@ -253,8 +317,8 @@
             <a href="#about" class="text-gray-300 hover:text-white transition-colors">About</a>
             <a href="#inventory" class="text-gray-300 hover:text-white transition-colors">Inventory</a>
             <a href="#contact" class="text-gray-300 hover:text-white transition-colors">Contact</a>
-            <button class="px-6 py-2.5 rounded-xl border-2 border-red-500 text-red-500 font-semibold">Login</button>
-            <button class="px-6 py-2.5 rounded-xl gradient-btn text-white font-semibold">Register</button>
+            <button data-open="login" class="px-6 py-2.5 rounded-xl border-2 border-red-500 text-red-500 font-semibold">Login</button>
+            <button data-open="register" class="px-6 py-2.5 rounded-xl gradient-btn text-white font-semibold">Register</button>
         </div>
     </div>
 
@@ -282,11 +346,11 @@
                     </p>
                     
                     <div class="flex flex-wrap gap-4">
-                        <button class="gradient-btn px-8 py-4 rounded-xl font-semibold text-white flex items-center space-x-2">
+                        <button data-open="register" class="gradient-btn px-8 py-4 rounded-xl font-semibold text-white flex items-center space-x-2">
                             <i class="fas fa-heart"></i>
                             <span>Become a Donor</span>
                         </button>
-                        <button class="px-8 py-4 rounded-xl border-2 border-red-500 text-white font-semibold hover:bg-red-500/10 transition-all flex items-center space-x-2">
+                        <button data-open="login" class="px-8 py-4 rounded-xl border-2 border-red-500 text-white font-semibold hover:bg-red-500/10 transition-all flex items-center space-x-2">
                             <i class="fas fa-search"></i>
                             <span>Request Blood</span>
                         </button>
@@ -365,7 +429,7 @@
                 <p class="text-gray-400 text-xl">Real-time blood inventory across all types</p>
             </div>
             
-            <div class="grid md:grid-cols-4 gap-6">
+            <div id="inventoryGrid" class="grid md:grid-cols-4 gap-6">
                 <!-- A+ -->
                 <div class="blood-type-card p-8 rounded-3xl card-hover">
                     <div class="flex items-center justify-between mb-6">
@@ -494,12 +558,12 @@
                     <p class="text-gray-400 text-lg">Have questions? We'd love to hear from you.</p>
                 </div>
                 
-                <form class="space-y-6">
+                <form id="contactForm" class="space-y-6">
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-semibold mb-2 text-gray-300">Full Name</label>
                             <input 
-                                type="text" 
+                                type="text" name="name" required
                                 placeholder="John Doe" 
                                 class="w-full p-4 rounded-xl"
                             />
@@ -508,7 +572,7 @@
                         <div>
                             <label class="block text-sm font-semibold mb-2 text-gray-300">Email Address</label>
                             <input 
-                                type="email" 
+                                type="email" name="email" required
                                 placeholder="john@example.com" 
                                 class="w-full p-4 rounded-xl"
                             />
@@ -518,7 +582,7 @@
                     <div>
                         <label class="block text-sm font-semibold mb-2 text-gray-300">Subject</label>
                         <input 
-                            type="text" 
+                            type="text" name="subject" required
                             placeholder="How can we help?" 
                             class="w-full p-4 rounded-xl"
                         />
@@ -527,7 +591,7 @@
                     <div>
                         <label class="block text-sm font-semibold mb-2 text-gray-300">Message</label>
                         <textarea 
-                            rows="5" 
+                            rows="5" name="message" required minlength="10"
                             placeholder="Your message..." 
                             class="w-full p-4 rounded-xl resize-none"
                         ></textarea>
@@ -613,6 +677,107 @@
         </div>
     </footer>
 
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-24 right-6 z-[100] flex flex-col space-y-3"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay fixed inset-0 z-[90] hidden items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md rounded-3xl p-8 relative modal-panel">
+            <button data-close class="absolute top-5 right-5 text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 mx-auto bg-gradient-to-br from-red-600 to-red-400 rounded-2xl flex items-center justify-center mb-4">
+                    <i class="fas fa-right-to-bracket text-white text-2xl"></i>
+                </div>
+                <h3 class="text-3xl font-black">Welcome Back</h3>
+                <p class="text-gray-400 mt-1">Sign in to your account</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Email Address</label>
+                    <input type="email" name="email" required placeholder="you@example.com" class="w-full p-4 rounded-xl" />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full p-4 rounded-xl" />
+                </div>
+                <button type="submit" class="w-full gradient-btn py-4 rounded-xl font-semibold text-white text-lg">Sign In</button>
+            </form>
+            <p class="text-center text-gray-400 mt-6">Don't have an account?
+                <button data-switch="register" class="text-red-500 font-semibold hover:text-red-400">Register</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal-overlay fixed inset-0 z-[90] hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="glass-card w-full max-w-2xl rounded-3xl p-8 relative modal-panel my-8">
+            <button data-close class="absolute top-5 right-5 text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 mx-auto bg-gradient-to-br from-red-600 to-red-400 rounded-2xl flex items-center justify-center mb-4">
+                    <i class="fas fa-user-plus text-white text-2xl"></i>
+                </div>
+                <h3 class="text-3xl font-black">Create Account</h3>
+                <p class="text-gray-400 mt-1">Join us and help save lives</p>
+            </div>
+            <form id="registerForm" class="space-y-5">
+                <div class="grid md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Full Name</label>
+                        <input type="text" name="name" required minlength="2" maxlength="50" placeholder="John Doe" class="w-full p-4 rounded-xl" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Email Address</label>
+                        <input type="email" name="email" required placeholder="you@example.com" class="w-full p-4 rounded-xl" />
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Password</label>
+                        <input type="password" name="password" required minlength="6" placeholder="Min 6 characters" class="w-full p-4 rounded-xl" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Phone (10 digits)</label>
+                        <input type="tel" name="phone" required pattern="[0-9]{10}" placeholder="9998887777" class="w-full p-4 rounded-xl" />
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Role</label>
+                        <select name="role" required class="w-full p-4 rounded-xl">
+                            <option value="donor">Donor</option>
+                            <option value="recipient">Recipient</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Blood Type</label>
+                        <select name="bloodType" required class="w-full p-4 rounded-xl">
+                            <option value="A+">A+</option><option value="A-">A-</option>
+                            <option value="B+">B+</option><option value="B-">B-</option>
+                            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            <option value="O+">O+</option><option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-300">Gender</label>
+                        <select name="gender" required class="w-full p-4 rounded-xl">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Date of Birth</label>
+                    <input type="date" name="dateOfBirth" required class="w-full p-4 rounded-xl" />
+                </div>
+                <button type="submit" class="w-full gradient-btn py-4 rounded-xl font-semibold text-white text-lg">Create Account</button>
+            </form>
+            <p class="text-center text-gray-400 mt-6">Already have an account?
+                <button data-switch="login" class="text-red-500 font-semibold hover:text-red-400">Sign In</button>
+            </p>
+        </div>
+    </div>
+
     <script>
         // Mobile Menu Toggle
         function toggleMobileMenu() {
@@ -622,4 +787,19 @@
         // Scroll Animation
         const observerOptions = {
             threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>
